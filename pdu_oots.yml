@@ -1,0 +1,416 @@
+openapi: 3.0.1
+info:
+  title: PDU - OOTS API defintion
+  version: v0
+servers:
+  - url: http://localhost:8080
+    description: Generated server url
+paths:
+  /commonservices/eb/lookup/requirements/{countryCode}/{procedureId}:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Find requirements
+      description: Gets a list of requirements for a specific country and a procedure identifier.
+      operationId: lookupRequirements
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: procedureId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requirement'
+  /commonservices/eb/lookup/procedureTypes/{countryCode}:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Search for a list of procedure types
+      description: Gets a list of procedures for a specific country.
+      operationId: lookupProcedureTypes
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcedureType'
+  /commonservices/eb/lookup/evidenceTypes/{countryCode}:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Find a list of evidence types
+      description: Gets a list of evidence types for a specific country and a request identifier.
+      operationId: lookupEvidenceTypes
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: requirementId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceType'
+  /commonservices/eb/lookup/evidenceTypes/{countryCode}/{procedureId}:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Find a list of evidence types
+      description: Gets a list of evidence types for a specific country and a request identifier.
+      operationId: lookupEvidenceTypesForProcedures
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: procedureId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceType'
+  /commonservices/eb/lookup/countryCodes:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Search list of countries
+      description: Gets a list of countries.
+      operationId: lookupCountryCodes
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountryCode'
+  /commonservices/eb/lookup/countryCodes/{procedureId}:
+    get:
+      tags:
+        - evidence-broker-controller
+      summary: Search the list of countries for the procedure
+      description: Gets the list of countries for the given procedure.
+      operationId: lookupCountryCodesForProcedure
+      parameters:
+        - name: procedureId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountryCode'
+  /commonservices/dsd/lookup/dataServices/{countryCode}:
+    get:
+      tags:
+        - data-service-directory-controller
+      summary: Search for evidence providers
+      description: Gets a list of evidence providers for a specific country and evidence type.
+      operationId: lookupEvidenceProviders
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: evidenceType
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceProvider'
+  /evidences/evidenceRequest/:
+    post:
+      tags:
+        - pdu-service-evidence-controller
+      summary: Start Evidence Request
+      description: User gives the consent to start the evidence request flow
+      operationId: startupEvidenceRequest
+      requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/EvidenceRequest'
+                      
+                            
+      responses:
+        '200':
+          description: OK
+
+  /evidenceDocuments/:
+    get:
+      tags:
+        - preview-space-controller
+      summary: Get the list of available documents to be previewed
+      description: The user will get a list all requested documents(including the type, procedure that is part of) and their preview link to the binary document.
+      operationId: getEvidenceList
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  procedure:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: T1
+                      description:
+                        type: string
+                        description: Description of the procedure type
+                        example: Applying for a tertiary education study financing, such as study grants and loans from a public body or institution
+                      requirement:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            description: Request identifier
+                            example: https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
+                          description:
+                            type: string
+                            description: Description of the request
+                            example: Proof of tertiary education diploma/certificate/degree
+                      evidenceList:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: 123
+                            evidenceType:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  description: Evidence type identifier
+                                  example: https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/EU/b6a49e54-8b3c-4688-acad-380440dc5962
+                                title:
+                                  type: string
+                                  example: Certificate of Birth
+                                issuingAuthority:
+                                  type: object
+                                  properties:
+                                      identifier:
+                                        type: string
+                                        example: DE73524311
+                                      name:
+                                        type: string
+                                        example: Civil Registration Office Berlin I
+                            transformation:
+                              type: string
+                              example: https://sr.oots.tech.ec.europa.eu/distributions/birthcert-1.0.0/age-of-majority
+  
+  /evidenceConsent/:
+    post:
+      tags:
+        - preview-space-controller
+      summary: Give consent to send the evicence documents as response data to MS DataService
+      description: User gives the consent to start the evidence response flow
+      operationId: consentEvidenceRequest
+      requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      evidenceList:
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                example: 123
+                              consent:
+                                type: boolean
+                                example: true
+                            
+      responses:
+        '200':
+          description: OK  
+
+components:
+  schemas:
+    Requirement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Request identifier
+          example: https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
+        name:
+          type: string
+          description: Description of the request
+          example: Proof of tertiary education diploma/certificate/degree
+      description: A request
+    ProcedureType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Procedure type identifier
+          example: T1
+        description:
+          type: string
+          description: Description of the procedure type
+          example: Applying for a tertiary education study financing, such as study grants and loans from a public body or institution
+      description: Procedure type
+    EvidenceType:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Evidence type identifier
+          example: https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/EU/b6a49e54-8b3c-4688-acad-380440dc5962
+        description:
+          type: string
+          description: Description of the type of evidence
+          example: EU-Wide Diploma/Bachelor's Degree
+      description: Tipul probei
+    CountryCode:
+      type: object
+      properties:
+        countryCode:
+          type: string
+          description: In short
+          example: RO
+        countryName:
+          type: string
+          description: Name of the country
+          example: Romania
+      description: Country abbreviation and name
+    EvidenceProvider:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Provider identifier
+          example: ro_test_ap
+        description:
+          type: string
+          description: Description of the provider
+          example: RO Ministry in the Projectathon
+      description: Provider of proof
+    EvidenceRequester:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the agent
+          example: NL222332239
+        Name:
+          type: string
+          description: Name of the agent
+          example: University of Amsterdam
+        Address:
+          type: object
+          properties:
+            FullAddress:
+              type: string
+              description: Full address of the agent
+              example: Binnengasthuisstraat 9
+            LocatorDesignator:
+              type: string
+              description: Designator of the locator
+              example: 9
+            PostCode:
+              type: string
+              description: Postal code of the agent's address
+              example: 1012
+            PostCityName:
+              type: string
+              description: City name of the agent's address
+              example: Amsterdam
+            AdminUnitLevel1:
+              type: string
+              description: First administrative unit level of the agent's address
+              example: NL
+            AdminUnitLevel2:
+              type: string
+              description: Second administrative unit level of the agent's address
+              example: NL329
+        Classification:
+          type: string
+          description: Classification of the agent
+          example: ER
+    EvidenceRequest:
+      type: object
+      properties:
+        possibilityForPreview:
+          type: boolean
+        procedure:
+              $ref: '#/components/schemas/ProcedureType/properties/id'
+        requirements:
+          type: array
+          items:
+              $ref: '#/components/schemas/Requirement'
+        evidenceRequester:
+          $ref: '#/components/schemas/EvidenceRequester/properties/id'
+        evidenceTypeClassification:
+          $ref: '#/components/schemas/EvidenceType/properties/id'
+        title:
+          type: string
+          example: Secondary Education Completion Evidence
+        
+              
+                 
