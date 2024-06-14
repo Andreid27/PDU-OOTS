@@ -85,7 +85,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EvidenceType'
+                  $ref: '#/components/schemas/EvidenceTypeStripped'
   '/commonservices/eb/lookup/evidenceTypes/{countryCode}/{procedureId}':
     get:
       tags:
@@ -159,8 +159,8 @@ paths:
         - data-service-directory-controller
       summary: Search for evidence providers
       description: >-
-        Gets a list of evidence providers for a specific country and evidence
-        type.
+        Find Data Services of Evidence Providers for a specific Evidence Type Classification.
+        This query allows the Evidence Requester to find all the Data Services of the Evidence Providers that can provide the required type of Evidence Type and are based in a specific geographic area.
       operationId: lookupEvidenceProviders
       parameters:
         - name: countryCode
@@ -200,7 +200,7 @@ paths:
       responses:
         '302':
           description: Redirect to preview space
-  '/evidences/evidenceResponse/{evidenceRequestId}':
+  '/evidences/evidenceResponse/{conversationId}':
     get:
       tags:
         - pdu-service-evidence-controller
@@ -210,7 +210,7 @@ paths:
         been completed and the user returned from the preview space.
       operationId: listenEvidenceResponse
       parameters:
-        - name: evidenceRequestId
+        - name: conversationId
           in: path
           required: true
           schema:
@@ -222,7 +222,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvidenceResponse'
-  '/preview/evidenceDocuments/{evidenceRequestId}':
+  '/preview/evidenceDocuments/{previewId}':
     get:
       tags:
         - preview-space-controller
@@ -233,7 +233,7 @@ paths:
         document.
       operationId: getEvidenceList
       parameters:
-        - name: evidenceRequestId
+        - name: previewId
           in: path
           required: true
           schema:
@@ -273,21 +273,142 @@ paths:
       responses:
         '302':
           description: Redirect to Online Procedural Portal
+  /commonservices/evidenceType/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Send the evidence type to the Data Service Directory
+      description: Send the evidence type to the Data Service Directory through ebXML to DSD(common services) and Evidence Broker.
+      operationId: createDataServiceEvidenceType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceType'
+      responses:
+        '201':
+          description: Created
+  /commonservices/dsd/evidenceProvider/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Send the evidence provider to theEvidence Broker
+      description: Create a new evidence provider to the Data Service Directory through ebXML to DSD(common services).
+      operationId: createDataServiceEvidenceProvider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
+      responses:
+        '201':
+          description: Created
+  /commonservices/eb/evidenceTypeList/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Send the evidence type list to the Evidence Broker
+      description: >-
+        Create a new evidence type list in Evidence Broker through ebXML to common services.
+      operationId: createEvidenceBrokerEvidenceTypeList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceTypeList'
+      responses:
+        '201':
+          description: Created
+  /commonservices/eb/requirement/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Send the requirement to the Data Service Directory
+      description: >-
+        Create a new requirement in Evidence Broker through ebXML to common services.
+      operationId: createEvidenceBrokerRequirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Requirement'
+      responses:
+        '201':
+          description: Created
+  /commonservices/eb/procedure/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Create procedure and send it to evidence broker
+      description: >-
+        Create a new procedure in Evidence Broker through ebXML to common services.
+      operationId: createProcedureEb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/Procedure'
+      responses:
+        '201':
+          description: Created
+  /commonservices/eb/associations/:
+    post:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Create associations and send it to evidence broker
+      description: >-
+        The EB LCM Interface accepts three distict associations linking the Registry Objects (EvidenceType, EvidenceTypeList, Requirement and ReferenceFramework) within the SubmitObjectsRequest Message. The different associations are defined the sections below. 
+        
+        ATENTION: Can be only one or multiple type of associations
+      operationId: createAssociation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+             $ref: '#/components/schemas/Associations'
+      responses:
+        '201':
+          description: Created      
+    
 components:
   schemas:
     Requirement:
       type: object
+      required:
+          - identifier
+          - nameLang
       properties:
         id:
           type: string
           description: Request identifier
           example: >-
             https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
-        name:
-          type: string
-          description: Description of the request
-          example: Proof of tertiary education diploma/certificate/degree
-      description: A request
+        nameLang:
+          type: array
+          items:
+            type: object
+            description: Description of the request
+            properties:
+              lang:
+                type: string
+                example: EN
+              name:
+                type: string
+                example: Proof of Birth
+      description: >-
+        This Registry Object provides the information of a Requirement in any of its derivative forms (Criterion, Information Requirement). It MUST NOT contain any Evidence Type or Reference Frameworks (Procedures) as this are provided dynamically by the use of associations. The classification node used MUST be Requirement under the EB Classification Scheme urn:fdc:oots:classification:eb
     ProcedureType:
       type: object
       properties:
@@ -302,7 +423,7 @@ components:
             Applying for a tertiary education study financing, such as study
             grants and loans from a public body or institution
       description: Procedure type
-    EvidenceType:
+    EvidenceTypeStripped:
       type: object
       properties:
         id:
@@ -395,7 +516,9 @@ components:
         evidenceRequester:
           $ref: '#/components/schemas/EvidenceRequester/properties/id'
         evidenceTypeClassification:
-          $ref: '#/components/schemas/EvidenceType/properties/id'
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceType/properties/id'
         title:
           type: string
           example: Secondary Education Completion Evidence
@@ -427,10 +550,10 @@ components:
             name:
               type: string
               example: Civil Registration Office Berlin I
-        transformation:
+        registryUrl:
           type: string
           example: >-
-            https://sr.oots.tech.ec.europa.eu/distributions/birthcert-1.0.0/age-of-majority
+            https://tech.ec.europa.eu/distributions/birthcert-1.0.0/age-of-majority
     EvidenceResponse:
       type: object
       properties:
@@ -442,3 +565,374 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvidenceDocument'
+    EvidenceType:
+      type: object
+      required:
+        - evidenceTypeClassification
+        - title
+        - titleLang
+      properties:
+        evidenceTypeClassification:
+          type: string
+          example: https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/DE/ca8afed6-2dc0-422a-a931-d21c3d8d370e
+        titleLang:
+          type: array
+          items:
+            type: object
+            properties:
+              lang:
+                type: string
+                example: EN
+              title:
+                type: string
+                example: Certificate of Birth
+        descriptionLang:
+          type: array
+          items:
+            type: object
+            properties:
+              lang:
+                type: string
+                example: EN
+              description:
+                type: string
+                example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
+        jurisdiction:
+          $ref: '#/components/schemas/Jurisdiction'
+        id:
+          type: string
+        Title:
+          type: string
+          example: Text
+        TitleTextLangCode:
+          type: array
+          items:
+            type: string
+            example: Code
+        Description:
+          type: string
+          example: Text
+        DescriptionTextLang:
+          type: string
+          example: Code
+        AuthenticationLevelOfAssurance:
+          type: string
+          example: Code
+        Note:
+          type: string
+          example: Text
+        NoteTextLang:
+          type: string
+          example: Code
+        DistributedAs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DistributedAs'
+        EvidenceProviderJurisdictionDetermination:
+          $ref: '#/components/schemas/EvidenceProviderJurisdictionDetermination'
+        EvidenceProviderClassification:
+          $ref: '#/components/schemas/EvidenceProviderClassification'
+        EvidenceProvider:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider/properties/identifier'
+    DistributedAs:
+      type: object
+      properties:
+        Format:
+          type: string
+          example: Code
+        ConformsTo:
+          type: string
+          example: URI
+        Transformation:
+          type: string
+          example: URI
+    EvidenceProviderJurisdictionDetermination:
+      type: object
+      properties:
+        JurisdictionContextId:
+          type: string
+        JurisdictionContext:
+          type: string
+          example: Text
+        JurisdictionContextTextLang:
+          type: string
+          example: Code
+        JurisdictionLevel:
+          type: string
+          example: Code
+    EvidenceProviderClassification:
+      type: object
+      properties:
+        id:
+          type: string
+        Type:
+          type: string
+          example: Text
+        ValueExpression:
+          type: string
+          example: Text
+        DescriptionLang:
+          type: string
+          example: Code
+    PublisherDataServiceEvidenceProvider:
+      type: object
+      required:
+        - identifier
+        - identifierSchemeID
+        - name
+        - nameLang
+      description: >-
+          A Node defining the registry object as an Evidence Provider (Publisher) Entity
+      properties:
+        identifier:
+          type: string
+        identifierSchemeID:
+          type: string
+          example: Code
+        name:
+          type: array
+          items:
+            type: string
+            example: Text
+        nameLang:
+          type: string
+          example: Code
+        description:
+          type: array
+          items:
+            type: string
+        descriptionLang:
+          type: string
+          example: Code
+        address:
+          $ref: '#/components/schemas/Address'
+        classificationConcept:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassificationConcept'
+    Address:
+      type: object
+      properties:
+        fullAddress:
+          type: string
+          example: Text
+        thoroughfare:
+          type: string
+          example: Text
+        locatorDesignator:
+          type: string
+          example: Text
+        adminUnitL1:
+          type: string
+          example: Code
+        adminUnitL2:
+          type: string
+          example: Code
+        postCode:
+          type: string
+          example: Code
+        postCityName:
+          type: string
+          example: Text
+        jurisdiction:
+          $ref: '#/components/schemas/Jurisdiction'
+
+    Jurisdiction:
+      type: object
+      required:
+        - adminUnitLevel1
+      properties:
+        adminUnitLevel1:
+          type: string
+          example: Code - ex. DE
+        adminUnitLevel2:
+          type: string
+          example: Code
+        adminUnitLevel3:
+          type: string
+          example: Code
+    ClassificationConcept:
+      type: object
+      required:
+        - identifier
+      properties:
+        identifier:
+          type: string
+        type:
+          type: string
+          example: Text
+        valueExpression:
+          type: string
+          example: Text
+        description:
+          type: array
+          items:
+            type: string
+            example: Text
+        descriptionLang:
+          type: string
+          example: Code
+        supportedValue:
+          $ref: '#/components/schemas/SupportedValue'
+    SupportedValue:
+      type: object
+      properties:
+        stringValue:
+          type: array
+          items:
+            type: string
+            example: Text
+        dateValue:
+          type: array
+          items:
+            type: string
+            format: date
+        booleanValue:
+          type: array
+          items:
+            type: boolean
+            
+    Procedure:
+        type: object
+        description: >-
+          This Registry Object ReferenceFramework provides the information of a Procedure. It MUST NOT contain any relations to other Reference Frameworks (Procedures) as this are provided dynamically by the use of associations. The classification node used MUST be ReferenceFramework under the EB Classification Scheme urn:fdc:oots:classification:eb.
+        properties:
+          Identifier:
+            type: string
+            example: "118fd444-6443-42be-a084-c9fbfd1f674d"
+          Title:
+            type: array
+            items:
+              type: object
+              properties:
+                lang:
+                  type: string
+                text:
+                  type: string
+            example:
+              - lang: "EN"
+                text: "Procedure #1 - Requesting proof of registration of birth"
+              - lang: "DE"
+                text: "Verfahren #1 - Beantragung des Nachweises über die Eintragung in das Geburtenregister"
+          Description:
+            type: array
+            items:
+              type: object
+              properties:
+                lang:
+                  type: string
+                text:
+                  type: string
+            example:
+              - lang: "EN"
+                text: "Procedure #1 'Requesting proof of registration of birth' belongs to the life event 'Birth' of Annex II of the Regulation (EU) 2018/1724 of the European Parliament and of the Council of 2 October 2018 establishing a single digital gateway to provide access to information, to procedures and to assistance and problem-solving services and amending Regulation (EU) No 1024/2012."
+              - lang: "DE"
+                text: "Das Verfahren #1 'Beantragung des Nachweises über die Eintragung in das Geburtenregister' gehört zum Lebensereignis 'Geburt' des Anhangs II der Verordnung (EU) 2018/1724 des Europäischen Parlaments und des Rates vom 2. Oktober 2018 über die Einrichtung eines einheitlichen digitalen Zugangstors zu Informationen, Verfahren, Hilfsund Problemlösungsdiensten und zur Änderung der Verordnung (EU) Nr. 1024/2012."
+          RelatedTo:
+            type: string
+            description: The Identifier of the SDGR Procedure which this procedure relates to encoded according to Procedures-CodeList.gc. In this case R1 relates to "Requesting a birth certificate"
+            example: "R1"
+          jurisdiction:
+              $ref: '#/components/schemas/Jurisdiction'
+    EvidenceTypeList:
+      type: object
+      description: >-
+        This Registry Object provides the information of the Evidence Type List. It works as an intermediate class linking multiple evidence types as an atomic proof to requirements and thus it MUST NOT contain any evidence types in its structure. The classification node used MUST be EvidenceTypeList under the EB Classification Scheme urn:fdc:oots:classification:eb.
+      properties:
+        Identifier:
+          type: string
+          example: 970918e4-1b27-41f0-be20-0a7c5fe4059f
+        NameLang: 
+          type: array
+          items:
+              type: object
+              properties:
+                lang:
+                  type: string
+                text:
+                  type: string
+              example:
+                - lang: "EN"
+                  text: "List of Birth Certificates"
+                - lang: "DE"
+                  text: "Liste der Geburtsurkunden"
+        
+    ContainsEvidence:
+      type: object
+      description: >-
+        This Association provides the link between an Evidence Type List and an Evidence Type. The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:ContainsEvidence, with the source object pointing to an EvidenceTypeList RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to rim:RegistryObject id of an EvidenceType object.  Evidence Types of an Evidence Type List are combined via the logic operator ‘AND’. An Evidence Type List is satisfied, if and only if, for all included Evidence Types in this List, corresponding conformant Evidence(s) are provided.
+      properties:
+        id:
+          type: string
+          description: A unique id for this association
+          example: 826a2206-5dd0-45ff-abbc-23ba8f38477f
+        evidenceTypeListId:
+          type: string
+          description: >-
+            The sourceObject is the 'rim:RegistryObject' id of the EvidenceTypeList "970918e4-1b27-41f0-be20-0a7c5fe4059f"
+          example: 970918e4-1b27-41f0-be20-0a7c5fe4059f
+        evidenceTypeId:
+          type: string
+          description: >-
+            The targetObject is the 'rim:RegistryObject' id of the EvidenceType "Certificate of Birth"
+          example: a1be6e74-e9ba-4d44-b04c-0376f367b8fd
+      
+    FulfillsRequirement:
+      type: object
+      description: >-
+        This Association provides the link between an Evidence Type List and a Requirement. The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:FulfillsRequirement, with the source object pointing to an EvidenceTypeList RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to the rim:RegistryObject id of an Requirement object.  Evidence Type Lists that fulfill the same Requirement are combined via the logic operator ‘OR’.
+      properties:
+        id:
+          type: string
+          description: A unique id for this association
+          example: 3da4288b-e2ca-4d40-bde2-d3fc2dd04bab
+        evidenceTypeListId:
+          type: string
+          description: >-
+            The sourceObject is the 'rim:RegistryObject' id of the EvidenceTypeList "970918e4-1b27-41f0-be20-0a7c5fe4059f"
+          example: 91197b3c-890b-475f-a07e-709742e59f23
+        requirementId:
+          type: string
+          description: >-
+            The targetObject is the 'rim:RegistryObject' id of the Requirement "Proof of Birth"
+          example: 315cfd75-6605-49c4-b0fe-799833b41099
+          
+    DerivesFromReferenceFramework:
+      type: object
+      description: >-
+        This Association provides the link between a Requirement and a ReferenceFramework (Procedure). The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:DerivesFromReferenceFramework, with the source object pointing to a Requirement RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to the rim:RegistryObject id of a ReferenceFramework object.
+        
+          Example: Associate the Requirement "Proof of Birth" with ReferenceFramework "Procedure #1 - Requesting proof of registration of birth
+      properties:
+        id:
+          type: string
+          description: A unique id for this association
+          example: d650d08b-4ca3-4d04-a5d2-255d83b84ce1
+        requirementId:
+          type: string
+          description: >-
+            The targetObject is the 'rim:RegistryObject' id of the Requirement "Proof of Birth"
+          example: 315cfd75-6605-49c4-b0fe-799833b41099   
+        procedureId:
+          type: string
+          description: >-
+            The targetObject is the 'rim:RegistryObject' id of the ReferenceFramework "Procedure #1 - Requesting proof of registration of birth"
+          example: b0c90eb4-6b66-4dd8-8c79-6d964ac3b9a1
+    Associations:
+      type: object
+      properties:
+          containsEvidence:
+            $ref: '#/components/schemas/ContainsEvidence'
+          fulfillsRequirement:
+            $ref: '#/components/schemas/FulfillsRequirement'
+          derivesFromReferenceFramework:
+            $ref: '#/components/schemas/DerivesFromReferenceFramework'
+            
+            
+
+      
+              
+
+      
