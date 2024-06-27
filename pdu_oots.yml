@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: PDU - OOTS API defintion
-  version: v0
+  version: v0.1
 servers:
   - url: 'http://localhost:8080'
     description: Generated server url
@@ -57,7 +57,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProcedureType'
-  '/commonservices/eb/lookup/evidenceTypes/{countryCode}':
+  '/commonservices/eb/lookup/evidenceTypes/{countryCode}/{requirementId}':
     get:
       tags:
         - evidence-broker-controller
@@ -73,7 +73,7 @@ paths:
           schema:
             type: string
         - name: requirementId
-          in: query
+          in: path
           required: true
           schema:
             type: string
@@ -114,7 +114,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EvidenceType'
+                  $ref: '#/components/schemas/EvidenceTypeStripped'
   /commonservices/eb/lookup/countryCodes:
     get:
       tags:
@@ -131,29 +131,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CountryCode'
-  '/commonservices/eb/lookup/countryCodes/{procedureId}':
-    get:
-      tags:
-        - evidence-broker-controller
-      summary: Search the list of countries for the procedure
-      description: Gets the list of countries for the given procedure.
-      operationId: lookupCountryCodesForProcedure
-      parameters:
-        - name: procedureId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CountryCode'
-  '/commonservices/dsd/lookup/dataServices/{countryCode}':
+  '/commonservices/dsd/lookup/dataServices/{countryCode}/{evidenceType}':
     get:
       tags:
         - data-service-directory-controller
@@ -169,7 +147,7 @@ paths:
           schema:
             type: string
         - name: evidenceType
-          in: query
+          in: path
           required: true
           schema:
             type: string
@@ -182,14 +160,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EvidenceProvider'
-  /evidences/evidenceRequest/:
+  '/evidences/evidenceRequest/':
     post:
       tags:
         - pdu-service-evidence-controller
       summary: Start Evidence Request
       description: >-
         User gives the consent to start the evidence request flow and getting
-        the link to preview space
+        the link to preview space. Also the second evidence loop starts here.
       operationId: startupEvidenceRequest
       requestBody:
         required: true
@@ -198,8 +176,16 @@ paths:
             schema:
               $ref: '#/components/schemas/EvidenceRequest'
       responses:
-        '302':
-          description: Redirect to preview space
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  previewURL:
+                    type: string
+                    example: https://preview.space.example.com/requests/d36af8bc-fea6-4ee5-a32d-5bef82cdb071
   '/evidences/evidenceResponse/{conversationId}':
     get:
       tags:
@@ -222,18 +208,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvidenceResponse'
-  '/preview/evidenceDocuments/{previewId}':
+  '/evidences/eiDasAuth/{targetCountryCode}':
     get:
       tags:
-        - preview-space-controller
-      summary: Get the list of available documents to be previewed
+        - pdu-service-evidence-controller
+      summary: Check the evidence response
       description: >-
-        The user will get a list all requested documents(including the type,
-        procedure that is part of) and their preview link to the binary
-        document.
-      operationId: getEvidenceList
+        Get the status of the evidence response after the evidence exchange has
+        been completed and the user returned from the preview space.
+      operationId: eiDasAuth
       parameters:
-        - name: previewId
+        - name: targetCountryCode
           in: path
           required: true
           schema:
@@ -244,7 +229,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EvidenceResponse'
+                type: object
+                properties:
+                  authURL:
+                    type: string
+                    example: https://ro.eidas.example.com/auth/DE           
+  '/preview/evidenceDocuments/{conversationId}':
+    get:
+      tags:
+        - preview-space-controller
+      summary: Get the list of available documents to be previewed
+      description: >-
+        The user will get a list all requested documents(including the type,
+        procedure that is part of) and their preview link to the binary
+        document.
+      operationId: getEvidenceList
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewResponse'
+
   /preview/evidenceConsent/:
     post:
       tags:
@@ -290,42 +303,7 @@ paths:
       responses:
         '201':
           description: Created
-  /commonservices/dsd/evidenceProvider/:
-    post:
-      tags:
-        - pdu-admin-controller
-      summary: >-
-        Send the evidence provider to theEvidence Broker
-      description: Create a new evidence provider to the Data Service Directory through ebXML to DSD(common services).
-      operationId: createDataServiceEvidenceProvider
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
-      responses:
-        '201':
-          description: Created
-  /commonservices/eb/evidenceTypeList/:
-    post:
-      tags:
-        - pdu-admin-controller
-      summary: >-
-        Send the evidence type list to the Evidence Broker
-      description: >-
-        Create a new evidence type list in Evidence Broker through ebXML to common services.
-      operationId: createEvidenceBrokerEvidenceTypeList
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EvidenceTypeList'
-      responses:
-        '201':
-          description: Created
-  /commonservices/eb/requirement/:
+  '/commonservices/eb/requirement/':
     post:
       tags:
         - pdu-admin-controller
@@ -343,6 +321,22 @@ paths:
       responses:
         '201':
           description: Created
+  '/commonservices/eb/lookup/requirements':
+      get:
+        tags:
+          - pdu-admin-controller
+        summary: Search list of requirements
+        description: Gets a list of all requirements. Associated or unassociated.
+        operationId: lookupRequirementsAdmin
+        responses:
+          '200':
+            description: OK
+            content:
+              '*/*':
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CountryCode'
   /commonservices/eb/procedure/:
     post:
       tags:
@@ -361,33 +355,13 @@ paths:
       responses:
         '201':
           description: Created
-  /commonservices/eb/associations/:
-    post:
-      tags:
-        - pdu-admin-controller
-      summary: >-
-        Create associations and send it to evidence broker
-      description: >-
-        The EB LCM Interface accepts three distict associations linking the Registry Objects (EvidenceType, EvidenceTypeList, Requirement and ReferenceFramework) within the SubmitObjectsRequest Message. The different associations are defined the sections below. 
-        
-        ATENTION: Can be only one or multiple type of associations
-      operationId: createAssociation
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-             $ref: '#/components/schemas/Associations'
-      responses:
-        '201':
-          description: Created      
     
 components:
   schemas:
     Requirement:
       type: object
       required:
-          - identifier
+          - id
           - nameLang
       properties:
         id:
@@ -454,11 +428,19 @@ components:
         id:
           type: string
           description: Provider identifier
-          example: ro_test_ap
-        description:
-          type: string
-          description: Description of the provider
-          example: RO Ministry in the Projectathon
+          example: DE73524311
+        nameLang:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Description of the provider
+                example: Civil Registration Office Berlin I
+              lang:
+                type: string
+                example: EN
       description: Provider of proof
     EvidenceRequester:
       type: object
@@ -505,31 +487,18 @@ components:
     EvidenceRequest:
       type: object
       properties:
+        pduServiceId: 
+          type: string
+          example: a7f30fbb-2585-4101-87be-c1415e3e16f5
+        requirementId:
+            $ref: '#/components/schemas/Requirement/properties/id'
+        evidenceType:
+            $ref: '#/components/schemas/EvidenceType/properties/id'
+        evidenceProvider:
+            $ref: '#/components/schemas/EvidenceProvider/properties/id'
         possibilityForPreview:
           type: boolean
-        procedure:
-          $ref: '#/components/schemas/ProcedureType/properties/id'
-        requirements:
-          type: array
-          items:
-            $ref: '#/components/schemas/Requirement'
-        evidenceRequester:
-          $ref: '#/components/schemas/EvidenceRequester/properties/id'
-        evidenceTypeClassification:
-          type: array
-          items:
-            $ref: '#/components/schemas/EvidenceType/properties/id'
-        title:
-          type: string
-          example: Secondary Education Completion Evidence
-        description:
-          type: string
-          example: >-
-            Proof of a secondary school graduation which is acquired after 12 or
-            13 school years in the upper secondary school and which entitles the
-            holder to the general higher education entrance qualification, i.e.
-            opens up access to all higher education institutions and fields of
-            study.
+
     EvidenceDocument:
       type: object
       properties:
@@ -557,10 +526,6 @@ components:
     EvidenceResponse:
       type: object
       properties:
-        procedure:
-          $ref: '#/components/schemas/Requirement'
-        requirement:
-          $ref: '#/components/schemas/Requirement'
         evidenceDocumentsList:
           type: array
           items:
@@ -929,10 +894,17 @@ components:
             $ref: '#/components/schemas/FulfillsRequirement'
           derivesFromReferenceFramework:
             $ref: '#/components/schemas/DerivesFromReferenceFramework'
-            
-            
-
-      
-              
-
-      
+    EidasRequest:
+        type: object
+        properties:
+            countryCode:
+              $ref: '#/components/schemas/CountryCode/properties/countryCode'
+    PreviewResponse:
+      type: object
+      properties:
+        Procedure:
+          $ref: '#/components/schemas/Procedure'
+        Requirement:
+          $ref: '#/components/schemas/Requirement'
+        EvidenceResponse:
+          $ref: '#/components/schemas/EvidenceResponse'
