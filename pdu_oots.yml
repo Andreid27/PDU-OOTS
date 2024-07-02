@@ -6,11 +6,10 @@ servers:
   - url: 'http://localhost:8080'
     description: Generated server url
 paths:
-
-  '/eb/procedureTypes':
+  '/procedureTypes':
     get:
       tags:
-        - evidence-broker-controller
+        - procedureTypes-controller
       summary: Search for a list of procedure types
       description: Returns a list of procedures types supported by SDG OOTS.
       operationId: lookupProcedureTypes
@@ -23,10 +22,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProcedureType'
-  /eb/procedures:
+  /countryCodes:
+    get:
+      tags:
+        - country-controller
+      summary: Search list of countries
+      description: Returns a list of countries suported by SDG.
+      operationId: lookupCountryCodes
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountryCode'
+  /procedures:
     post:
       tags:
-        - evidence-broker-controller
+        - procedures-controller
       summary: >-
         Create procedure and send it to evidence broker
       description: >-
@@ -41,10 +56,10 @@ paths:
       responses:
         '201':
           description: Created
-  /eb/procedures/{procedureId}:
+  /procedures/{procedureId}:
     put:
       tags:
-        - evidence-broker-controller
+        - procedures-controller
       summary: >-
         Update a procedure and send it to evidence broker
       description: >-
@@ -68,7 +83,7 @@ paths:
           description: Updated
     get:
       tags:
-        - evidence-broker-controller
+        - procedures-controller
       summary: Find a list of evidence types
       description: >-
         Returns a list of evidence types classifications for a specific country and a requirement identifier.
@@ -89,7 +104,7 @@ paths:
                   $ref: '#/components/schemas/Procedure'
     delete:
         tags:
-          - evidence-broker-controller
+          - procedures-controller
         summary: >-
           Delete a procedure and send it to evidence broker
         description: >-
@@ -105,56 +120,11 @@ paths:
         responses:
           '200':
             description: Updated
-  '/eb/evidenceTypeClassifications':
+
+  '/providers':
     get:
       tags:
-        - evidence-broker-controller
-      summary: Find a list of evidence types
-      description: >-
-        Returns a list of evidence types classifications for a specific country and a requirement identifier.
-      operationId: lookupEvidenceTypes
-      parameters:
-        - name: countryCode
-          in: query
-          required: true
-          schema:
-            type: string
-          example: DE
-        - name: requirementId
-          in: query
-          required: true
-          schema:
-            type: string
-          example: https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EvidenceTypeClassification'
-  /eb/countryCodes:
-    get:
-      tags:
-        - evidence-broker-controller
-      summary: Search list of countries
-      description: Returns a list of countries suported by SDG.
-      operationId: lookupCountryCodes
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CountryCode'
-  '/dsd/providers':
-    get:
-      tags:
-        - data-service-directory-controller
+        - providers-controller
       summary: Search for evidence providers
       description: >-
         Find Data Services of Evidence Providers for a specific Evidence Type Classification.
@@ -185,7 +155,7 @@ paths:
                   $ref: '#/components/schemas/EvidenceProvider'
     post:
       tags:
-        - data-service-directory-controller
+        - providers-controller
       summary: >-
         Create and send the evidence provider to the Data Service Directory
       description: Create new evidence provider in Data Service Directory
@@ -199,10 +169,10 @@ paths:
       responses:
         '201':
           description: Created
-  '/dsd/providers/{providersId}':
+  '/providers/{providersId}':
     put:
       tags:
-        - data-service-directory-controller
+        - providers-controller
       summary: >-
         Update and send the evidence provider to the Data Service Directory
       description: Update an existing evidence provider in Data Service Directory
@@ -225,7 +195,7 @@ paths:
           description: Created
     get:
       tags:
-        - data-service-directory-controller
+        - providers-controller
       summary: Get an existing evidence provider
       description: Get an existing evidence provider
       operationId: getEvidenceProvider
@@ -247,7 +217,7 @@ paths:
                   $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
     delete:
       tags:
-        - data-service-directory-controller
+        - providers-controller
       summary: Search for evidence providers
       parameters:
         - name: providersId
@@ -260,10 +230,10 @@ paths:
       responses:
         '200':
           description: OK
-  /dsd/evidenceTypeClassifications:
+  /evidenceTypes:
     post:
       tags:
-        - data-service-directory-controller
+        - evidenceType-controller
       summary: >-
         Create and send the evidence type to the Data Service Directory and submit it for review.
       description: Send the evidence type to the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. When arriving in Common Services it will be automatically created as draft. After the draft is created, this endpoint will automatically also submit it for review.
@@ -277,16 +247,43 @@ paths:
       responses:
         '201':
           description: Created
+    get:
+      tags:
+        - evidenceType-controller
+      summary: Find a list of evidence types
+      description: >-
+        Returns a list of evidence types classifications for a specific country and a requirement identifier.
+      operationId: lookupEvidenceTypes
+      parameters:
+        - name: countryCode
+          in: query
+          required: true
+          schema:
+            type: string
+          example: DE
+        - name: requirementId
+          in: query
+          required: true
+          schema:
+            type: string
+          example: https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                  $ref: '#/components/schemas/EvidenceTypeList'
 
-  /dsd/evidenceTypeClassifications/{evidenceTypeClassificationId}:
+  /evidenceTypes/{evidenceTypeId}:
     put:
       tags:
-        - data-service-directory-controller
+        - evidenceType-controller
       summary: >-
         Edit an existing the evidence type from the Data Service Directory and submit it for review.
       description: Edit the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft.  After the draft is created the evidence type will be modified, and then this endpoint will automatically also submit it for review.
       parameters:
-        - name: evidenceTypeClassificationId
+        - name: evidenceTypeId
           in: path
           required: true
           schema:
@@ -304,12 +301,12 @@ paths:
           description: Ok 
     get:
       tags:
-        - data-service-directory-controller
+        - evidenceType-controller
       summary: >-
         Get evidence type classification by id
       description: Delete the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft. After the seccond message will delete the evidence type.
       parameters:
-        - name: evidenceTypeClassificationId
+        - name: evidenceTypeId
           in: path
           required: true
           schema:
@@ -327,12 +324,12 @@ paths:
                   $ref: '#/components/schemas/EvidenceType'
     delete:
       tags:
-        - data-service-directory-controller
+        - evidenceType-controller
       summary: >-
         Delete evidence type classification by id.
       description: Delete the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft. After the seccond message will delete the evidence type.
       parameters:
-        - name: evidenceTypeClassificationId
+        - name: evidenceTypeId
           in: path
           required: true
           schema:
@@ -490,7 +487,7 @@ components:
             Applying for a tertiary education study financing, such as study
             grants and loans from a public body or institution
       description: Procedure type
-    EvidenceTypeClassification:
+    EvidenceType:
       type: object
       properties:
         id:
@@ -534,53 +531,11 @@ components:
               lang:
                 type: string
                 example: EN
-        evidenceTypeId:
+        outputEvidenceTypeId:
             type: string
             description: Referenced in OOTS documentation and messaging as DataServiceEvidenceType. It represents the association between an Evidence Type and an Evidence Provider. 
             example: d92f7ed9-1ca6-4c55-9389-33ab3263840d
       description: Provider of proof
-    EvidenceRequester:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the agent
-          example: NL222332239
-        Name:
-          type: string
-          description: Name of the agent
-          example: University of Amsterdam
-        Address:
-          type: object
-          properties:
-            FullAddress:
-              type: string
-              description: Full address of the agent
-              example: Binnengasthuisstraat 9
-            LocatorDesignator:
-              type: string
-              description: Designator of the locator
-              example: 9
-            PostCode:
-              type: string
-              description: Postal code of the agent's address
-              example: 1012
-            PostCityName:
-              type: string
-              description: City name of the agent's address
-              example: Amsterdam
-            AdminUnitLevel1:
-              type: string
-              description: First administrative unit level of the agent's address
-              example: NL
-            AdminUnitLevel2:
-              type: string
-              description: Second administrative unit level of the agent's address
-              example: NL329
-        Classification:
-          type: string
-          description: Classification of the agent
-          example: ER
     EvidenceRequest:
       type: object
       properties:
@@ -653,37 +608,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvidenceDocument'
-    EvidenceType:
-      type: object
-      required:
-        - evidenceTypeClass
-        - title
-        - titleLang
-      properties:
-        titleLang:
-          type: array
-          items:
-            type: object
-            properties:
-              lang:
-                type: string
-                example: EN
-              title:
-                type: string
-                example: Certificate of Birth
-        descriptionLang:
-          type: array
-          items:
-            type: object
-            properties:
-              lang:
-                type: string
-                example: EN
-              description:
-                type: string
-                example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
-        jurisdiction:
-          $ref: '#/components/schemas/Jurisdiction'
+    EvidenceTypeList:
+        type: array
+        items:
+          type: object
+          properties:
+            titleLang:
+              type: array
+              items:
+                type: object
+                properties:
+                  lang:
+                    type: string
+                    example: EN
+                  title:
+                    type: string
+                    example: Certificate of Birth
+            descriptionLang:
+              type: array
+              items:
+                type: object
+                properties:
+                  lang:
+                    type: string
+                    example: EN
+                  description:
+                    type: string
+                    example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
     DistributedAs:
       type: object
       properties:
@@ -807,29 +758,6 @@ components:
         adminUnitLevel3:
           type: string
           example: Code
-    ClassificationConcept:
-      type: object
-      required:
-        - identifier
-      properties:
-        identifier:
-          type: string
-        type:
-          type: string
-          example: Text
-        valueExpression:
-          type: string
-          example: Text
-        description:
-          type: array
-          items:
-            type: string
-            example: Text
-        descriptionLang:
-          type: string
-          example: Code
-        supportedValue:
-          $ref: '#/components/schemas/SupportedValue'
     SupportedValue:
       type: object
       properties:
@@ -890,108 +818,26 @@ components:
             example: "R1"
           Jurisdiction:
               $ref: '#/components/schemas/Jurisdiction'
-          RequirementsMapping:
-              type: array
-              items:
+          requirements:
+            type: array
+            items:
+                type: string
+                description: An array of string URLs
+                example:
+                  - https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
+                  - https://sr.oots.tech.ec.europa.eu/requirements/005a80c1-f2d5-3cdb-bc65-2a085600fbde
+                  - https://sr.oots.tech.ec.europa.eu/requirements/336661a9-677d-3dd5-ac25-d8a86756b20d
+
+          outputEvidenceType:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    example: 123
                   requirementId: 
                     $ref: '#/components/schemas/Requirement/properties/id'
                   evidenceTypeClassificationId:
-                    $ref: '#/components/schemas/EvidenceTypeClassification/properties/id'
-                          
-
-    EvidenceTypeList:
-      type: object
-      description: >-
-        This Registry Object provides the information of the Evidence Type List. It works as an intermediate class linking multiple evidence types as an atomic proof to requirements and thus it MUST NOT contain any evidence types in its structure. The classification node used MUST be EvidenceTypeList under the EB Classification Scheme urn:fdc:oots:classification:eb.
-      properties:
-        Identifier:
-          type: string
-          example: 970918e4-1b27-41f0-be20-0a7c5fe4059f
-        NameLang: 
-          type: array
-          items:
-              type: object
-              properties:
-                lang:
-                  type: string
-                text:
-                  type: string
-              example:
-                - lang: "EN"
-                  text: "List of Birth Certificates"
-                - lang: "DE"
-                  text: "Liste der Geburtsurkunden"
-        
-    ContainsEvidence:
-      type: object
-      description: >-
-        This Association provides the link between an Evidence Type List and an Evidence Type. The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:ContainsEvidence, with the source object pointing to an EvidenceTypeList RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to rim:RegistryObject id of an EvidenceType object.  Evidence Types of an Evidence Type List are combined via the logic operator ‘AND’. An Evidence Type List is satisfied, if and only if, for all included Evidence Types in this List, corresponding conformant Evidence(s) are provided.
-      properties:
-        id:
-          type: string
-          description: A unique id for this association
-          example: 826a2206-5dd0-45ff-abbc-23ba8f38477f
-        evidenceTypeListId:
-          type: string
-          description: >-
-            The sourceObject is the 'rim:RegistryObject' id of the EvidenceTypeList "970918e4-1b27-41f0-be20-0a7c5fe4059f"
-          example: 970918e4-1b27-41f0-be20-0a7c5fe4059f
-        evidenceTypeId:
-          type: string
-          description: >-
-            The targetObject is the 'rim:RegistryObject' id of the EvidenceType "Certificate of Birth"
-          example: a1be6e74-e9ba-4d44-b04c-0376f367b8fd
-      
-    FulfillsRequirement:
-      type: object
-      description: >-
-        This Association provides the link between an Evidence Type List and a Requirement. The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:FulfillsRequirement, with the source object pointing to an EvidenceTypeList RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to the rim:RegistryObject id of an Requirement object.  Evidence Type Lists that fulfill the same Requirement are combined via the logic operator ‘OR’.
-      properties:
-        id:
-          type: string
-          description: A unique id for this association
-          example: 3da4288b-e2ca-4d40-bde2-d3fc2dd04bab
-        evidenceTypeListId:
-          type: string
-          description: >-
-            The sourceObject is the 'rim:RegistryObject' id of the EvidenceTypeList "970918e4-1b27-41f0-be20-0a7c5fe4059f"
-          example: 91197b3c-890b-475f-a07e-709742e59f23
-        requirementId:
-          type: string
-          description: >-
-            The targetObject is the 'rim:RegistryObject' id of the Requirement "Proof of Birth"
-          example: 315cfd75-6605-49c4-b0fe-799833b41099
-          
-    DerivesFromReferenceFramework:
-      type: object
-      description: >-
-        This Association provides the link between a Requirement and a ReferenceFramework (Procedure). The type attribute MUST be urn:oasis:names:tc:ebxml-regrep:AssociationType:DerivesFromReferenceFramework, with the source object pointing to a Requirement RegistryObject through the use of its rim:RegistryObject id and the targetObject pointing to the rim:RegistryObject id of a ReferenceFramework object.
-        
-          Example: Associate the Requirement "Proof of Birth" with ReferenceFramework "Procedure #1 - Requesting proof of registration of birth
-      properties:
-        id:
-          type: string
-          description: A unique id for this association
-          example: d650d08b-4ca3-4d04-a5d2-255d83b84ce1
-        requirementId:
-          type: string
-          description: >-
-            The targetObject is the 'rim:RegistryObject' id of the Requirement "Proof of Birth"
-          example: 315cfd75-6605-49c4-b0fe-799833b41099   
-        procedureId:
-          type: string
-          description: >-
-            The targetObject is the 'rim:RegistryObject' id of the ReferenceFramework "Procedure #1 - Requesting proof of registration of birth"
-          example: b0c90eb4-6b66-4dd8-8c79-6d964ac3b9a1
-    EvidenceTypeProvider:
-      type: object
-      properties:
-        requirementId: 
-          $ref: '#/components/schemas/Requirement/properties/id'
-        evidenceTypeClassificationId:
-          $ref: '#/components/schemas/EvidenceTypeClassification/properties/id'
+                    $ref: '#/components/schemas/EvidenceType/properties/id'
     PreviewResponse:
       type: object
       properties:
