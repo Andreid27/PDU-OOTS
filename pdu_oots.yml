@@ -86,35 +86,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EvidenceTypeStripped'
-  '/commonservices/eb/lookup/evidenceTypes/{countryCode}/{procedureId}':
-    get:
-      tags:
-        - evidence-broker-controller
-      summary: Find a list of evidence types
-      description: >-
-        Gets a list of evidence types for a specific country and a request
-        identifier.
-      operationId: lookupEvidenceTypesForProcedures
-      parameters:
-        - name: countryCode
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: procedureId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EvidenceTypeStripped'
   /commonservices/eb/lookup/countryCodes:
     get:
       tags:
@@ -291,8 +262,8 @@ paths:
       tags:
         - pdu-admin-controller
       summary: >-
-        Send the evidence type to the Data Service Directory
-      description: Send the evidence type to the Data Service Directory through ebXML to DSD(common services) and Evidence Broker.
+        Send the evidence type to the Data Service Directory and submit it for review.
+      description: Send the evidence type to the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. When arriving in Common Services it will be automatically created as draft. After the draft is created, this endpoint will automatically also submit it for review.
       operationId: createDataServiceEvidenceType
       requestBody:
         required: true
@@ -303,24 +274,91 @@ paths:
       responses:
         '201':
           description: Created
-  '/commonservices/eb/requirement/':
-    post:
+  /commonservices/evidenceType/{evidenceTypeId}:
+    put:
       tags:
         - pdu-admin-controller
       summary: >-
-        Send the requirement to the Data Service Directory
-      description: >-
-        Create a new requirement in Evidence Broker through ebXML to common services.
-      operationId: createEvidenceBrokerRequirement
+        Edit an existing the evidence type from the Data Service Directory and submit it for review.
+      description: Edit the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft.  After the draft is created the evidence type will be modified, and then this endpoint will automatically also submit it for review.
+      parameters:
+        - name: evidenceTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: updateDataServiceEvidenceType
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Requirement'
+              $ref: '#/components/schemas/EvidenceType'
       responses:
-        '201':
-          description: Created
+        '200':
+          description: Ok  
+    get:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Edit an existing the evidence type from the Data Service Directory and submit it for review.
+      description: Delete the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft. After the seccond message will delete the evidence type.
+      parameters:
+        - name: evidenceTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: getDataServiceEvidenceType
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceType'
+    delete:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Edit an existing the evidence type from the Data Service Directory and submit it for review.
+      description: Delete the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft. After the seccond message will delete the evidence type.
+      parameters:
+        - name: evidenceTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: deleteDataServiceEvidenceType
+      responses:
+        '204':
+          description: No content  
+
+  /commonservices/unlink/{requirementId}/{evidenceTypeId}:
+    delete:
+      tags:
+        - pdu-admin-controller
+      summary: >-
+        Delete an existing the evidence type from the Data Service Directory.
+      description: Delete the evidence type from the Data Service Directory through ebXML to DSD(common services) and Evidence Broker. First message to DSD will move the evidence type to draft. After the seccond message will delete the evidence type.
+      parameters:
+        - name: evidenceTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: requirementId
+          in: path
+          required: true
+          schema:
+            type: string
+      operationId: unlinkRequirementEvidenceType
+      responses:
+        '204':
+          description: No content 
+  
   '/commonservices/eb/lookup/requirements':
       get:
         tags:
@@ -336,7 +374,7 @@ paths:
                 schema:
                   type: array
                   items:
-                    $ref: '#/components/schemas/CountryCode'
+                    $ref: '#/components/schemas/Requirement'
   /commonservices/eb/procedure/:
     post:
       tags:
@@ -507,6 +545,27 @@ components:
           example: 123
         evidenceType:
           $ref: '#/components/schemas/EvidenceType'
+        AuthenticationLevelOfAssurance:
+          type: string
+          example: Code
+        Note:
+          type: string
+          example: Text
+        NoteTextLang:
+          type: string
+          example: Code
+        DistributedAs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DistributedAs'
+        EvidenceProviderJurisdictionDetermination:
+          $ref: '#/components/schemas/EvidenceProviderJurisdictionDetermination'
+        EvidenceProviderClassification:
+          $ref: '#/components/schemas/EvidenceProviderClassification'
+        EvidenceProvider:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider/properties/identifier'
         title:
           type: string
           example: Certificate of Birth
@@ -537,6 +596,9 @@ components:
         - title
         - titleLang
       properties:
+        id:
+          type: string
+          example: 1169c246-bcaa-4b7f-9e03-2b507ec41e95
         evidenceTypeClassification:
           type: string
           example: https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/DE/ca8afed6-2dc0-422a-a931-d21c3d8d370e
@@ -564,43 +626,6 @@ components:
                 example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
         jurisdiction:
           $ref: '#/components/schemas/Jurisdiction'
-        id:
-          type: string
-        Title:
-          type: string
-          example: Text
-        TitleTextLangCode:
-          type: array
-          items:
-            type: string
-            example: Code
-        Description:
-          type: string
-          example: Text
-        DescriptionTextLang:
-          type: string
-          example: Code
-        AuthenticationLevelOfAssurance:
-          type: string
-          example: Code
-        Note:
-          type: string
-          example: Text
-        NoteTextLang:
-          type: string
-          example: Code
-        DistributedAs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DistributedAs'
-        EvidenceProviderJurisdictionDetermination:
-          $ref: '#/components/schemas/EvidenceProviderJurisdictionDetermination'
-        EvidenceProviderClassification:
-          $ref: '#/components/schemas/EvidenceProviderClassification'
-        EvidenceProvider:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider/properties/identifier'
     DistributedAs:
       type: object
       properties:
@@ -908,3 +933,8 @@ components:
           $ref: '#/components/schemas/Requirement'
         EvidenceResponse:
           $ref: '#/components/schemas/EvidenceResponse'
+
+      
+              
+
+      
