@@ -38,6 +38,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CountryCode'
+  '/requirements':
+      get:
+        tags:
+          - requirements-controller
+        summary: Search list of requirements
+        description: Gets a list of all requirements. Associated or unassociated.
+        operationId: lookupRequirementsAdmin
+        parameters:
+          - name: procedureId
+            in: query
+            required: false
+            schema:
+              type: string
+            example: 118fd444-6443-42be-a084-c9fbfd1f674d
+        responses:
+          '200':
+            description: OK
+            content:
+              '*/*':
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Requirement'
   /procedures:
     post:
       tags:
@@ -165,7 +188,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
+              $ref: '#/components/schemas/Provider'
       responses:
         '201':
           description: Created
@@ -189,7 +212,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
+              $ref: '#/components/schemas/Provider'
       responses:
         '201':
           description: Created
@@ -214,7 +237,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider'
+                  $ref: '#/components/schemas/Provider'
     delete:
       tags:
         - providers-controller
@@ -263,7 +286,7 @@ paths:
           example: DE
         - name: requirementId
           in: query
-          required: true
+          required: false
           schema:
             type: string
           example: https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
@@ -273,7 +296,9 @@ paths:
           content:
             '*/*':
               schema:
-                  $ref: '#/components/schemas/EvidenceTypeList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceType'
 
   /evidenceTypes/{evidenceTypeId}:
     put:
@@ -319,9 +344,7 @@ paths:
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EvidenceType'
+                $ref: '#/components/schemas/EvidenceType'
     delete:
       tags:
         - evidenceType-controller
@@ -392,7 +415,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EvidenceResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceDocument'
   '/preview/evidenceDocuments/{conversationId}':
     get:
       tags:
@@ -475,6 +500,9 @@ components:
         This Registry Object provides the information of a Requirement in any of its derivative forms (Criterion, Information Requirement). It MUST NOT contain any Evidence Type or Reference Frameworks (Procedures) as this are provided dynamically by the use of associations. The classification node used MUST be Requirement under the EB Classification Scheme urn:fdc:oots:classification:eb
     ProcedureType:
       type: object
+      required:
+          - id
+          - description
       properties:
         id:
           type: string
@@ -487,19 +515,6 @@ components:
             Applying for a tertiary education study financing, such as study
             grants and loans from a public body or institution
       description: Procedure type
-    EvidenceType:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Evidence type identifier
-          example: >-
-            https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/EU/b6a49e54-8b3c-4688-acad-380440dc5962
-        description:
-          type: string
-          description: Description of the type of evidence
-          example: EU-Wide Diploma/Bachelor's Degree
-      description: Tipul probei
     CountryCode:
       type: object
       properties:
@@ -514,6 +529,8 @@ components:
       description: Country abbreviation and name
     EvidenceProvider:
       type: object
+      required:
+          - nameLang
       properties:
         id:
           type: string
@@ -532,62 +549,55 @@ components:
                 type: string
                 example: EN
         outputEvidenceTypeId:
-            type: string
-            description: Referenced in OOTS documentation and messaging as DataServiceEvidenceType. It represents the association between an Evidence Type and an Evidence Provider. 
-            example: d92f7ed9-1ca6-4c55-9389-33ab3263840d
+          type: string
+          example: 3a24b689-e2f2-41b2-b413-f1e341bd6eec
+          description: This is alse referenced in OOTS documentation and messaging as DataServiceEvidenceType and it is representing the association between a data service of a provider and the evidence type classification that the user is looking for.
       description: Provider of proof
     EvidenceRequest:
       type: object
+      required:
+          - procedureId
+          - requirementId
+          - evidenceProvider
+          - outputEvidenceTypeId
+          - possibilityForPreview
       properties:
-        pduServiceId: 
+        procedureId: 
           type: string
           example: a7f30fbb-2585-4101-87be-c1415e3e16f5
         requirementId:
             $ref: '#/components/schemas/Requirement/properties/id'
-        evindeceTypeId:
-          type: string
-          example: 3a24b689-e2f2-41b2-b413-f1e341bd6eec
         evidenceProvider:
             $ref: '#/components/schemas/EvidenceProvider/properties/id'
+        outputEvidenceTypeId:
+          type: string
+          example: 3a24b689-e2f2-41b2-b413-f1e341bd6eec
+          description: This is alse referenced in OOTS documentation and messaging as DataServiceEvidenceType and it is representing the association between a data service of a provider and the evidence type classification that the user is looking for.
         possibilityForPreview:
           type: boolean
         conversationId:
           type: string
           description: Only for the second loop request
           example: 1000f6bf-1403-11ee-8d29-0242ac120002@domibus.eu
-
     EvidenceDocument:
       type: object
+      required:
+          - id
+          - evidenceType
+          - evidenceProvider
       properties:
         id:
           type: string
-          example: 123
-        evidenceType:
-          $ref: '#/components/schemas/EvidenceType'
-        AuthenticationLevelOfAssurance:
-          type: string
-          example: Code
-        Note:
-          type: string
-          example: Text
-        NoteTextLang:
-          type: string
-          example: Code
-        DistributedAs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DistributedAs'
-        EvidenceProviderJurisdictionDetermination:
-          $ref: '#/components/schemas/EvidenceProviderJurisdictionDetermination'
-        EvidenceProviderClassification:
-          $ref: '#/components/schemas/EvidenceProviderClassification'
-        EvidenceProvider:
-          type: array
-          items:
-            $ref: '#/components/schemas/PublisherDataServiceEvidenceProvider/properties/identifier'
+          example: 58f33f20-9551-449b-984e-c05fb276a480
         title:
           type: string
           example: Certificate of Birth
+        evidenceType:
+          $ref: '#/components/schemas/EvidenceType'
+        evidenceProvider:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceProvider'
         issuingAuthority:
           type: object
           properties:
@@ -601,88 +611,46 @@ components:
           type: string
           example: >-
             https://tech.ec.europa.eu/distributions/birthcert-1.0.0/age-of-majority
-    EvidenceResponse:
-      type: object
-      properties:
-        evidenceDocumentsList:
-          type: array
-          items:
-            $ref: '#/components/schemas/EvidenceDocument'
-    EvidenceTypeList:
-        type: array
-        items:
-          type: object
-          properties:
-            titleLang:
-              type: array
-              items:
-                type: object
-                properties:
-                  lang:
-                    type: string
-                    example: EN
-                  title:
-                    type: string
-                    example: Certificate of Birth
-            descriptionLang:
-              type: array
-              items:
-                type: object
-                properties:
-                  lang:
-                    type: string
-                    example: EN
-                  description:
-                    type: string
-                    example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
-    DistributedAs:
-      type: object
-      properties:
-        Format:
-          type: string
-          example: Code
-        ConformsTo:
-          type: string
-          example: URI
-        Transformation:
-          type: string
-          example: URI
-    EvidenceProviderJurisdictionDetermination:
-      type: object
-      properties:
-        JurisdictionContextId:
-          type: string
-        JurisdictionContext:
-          type: string
-          example: Text
-        JurisdictionContextTextLang:
-          type: string
-          example: Code
-        JurisdictionLevel:
-          type: string
-          example: Code
-    EvidenceProviderClassification:
-      type: object
-      properties:
-        id:
-          type: string
-        Type:
-          type: string
-          example: Text
-        ValueExpression:
-          type: string
-          example: Text
-        DescriptionLang:
-          type: string
-          example: Code
-    PublisherDataServiceEvidenceProvider:
+    EvidenceType:
+        type: object
+        required:
+        - id
+        - titleLang
+        properties:
+          id:
+            type: string
+            description: Evidence type identifier
+            example: >-
+              https://sr.oots.tech.ec.europa.eu/evidencetypeclassifications/EU/b6a49e54-8b3c-4688-acad-380440dc5962
+          titleLang:
+            type: array
+            items:
+              type: object
+              properties:
+                lang:
+                  type: string
+                  example: EN
+                title:
+                  type: string
+                  example: Certificate of Birth
+          descriptionLang:
+            type: array
+            items:
+              type: object
+              properties:
+                lang:
+                  type: string
+                  example: EN
+                description:
+                  type: string
+                  example: An official certificate of birth of a person - with first name, surname, sex, date and place of birth, which is obtained from the birth register of the place of birth.
+    Provider:
       type: object
       required:
         - identifier
         - identifierSchemeID
         - name
         - nameLang
-        - descriptionLang
         - address
       description: >-
           A Node defining the registry object as an Evidence Provider (Publisher) Entity
@@ -719,26 +687,32 @@ components:
                 example: EN
         address:
           $ref: '#/components/schemas/Address'
+        classification:
+          type: string
+          example: Intermediary Platform
     Address:
       type: object
+      required:
+        - city
+        - jurisdiction
       properties:
-        City:
+        city:
           type: string
           description: City name of the agent's address
           example: Amsterdam
-        PostalCode:
+        postalCode:
           type: string
           description: Postal code of the agent's address
           example: 1012
-        Street:
+        street:
           type: string
           description: Full address of the agent
           example: Binnengasthuisstraat
-        StreetNumber:
+        streetNumber:
           type: string
           description: Designator of the locator
           example: 9
-        AdtionalAdressDetails:
+        adtionalAdressDetails:
           type: string
           example: building, apartment number. floor, etc
         jurisdiction:
@@ -749,6 +723,9 @@ components:
       required:
         - adminUnitLevel1
       properties:
+        type:
+          type: string
+          example: National
         adminUnitLevel1:
           type: string
           example: Code - ex. DE
@@ -758,40 +735,29 @@ components:
         adminUnitLevel3:
           type: string
           example: Code
-    SupportedValue:
-      type: object
-      properties:
-        stringValue:
-          type: array
-          items:
-            type: string
-            example: Text
-        dateValue:
-          type: array
-          items:
-            type: string
-            format: date
-        booleanValue:
-          type: array
-          items:
-            type: boolean
-            
     Procedure:
         type: object
+        required: 
+        - procedureTypeId
+        - nameLang
+        - jurisdiction
         description: >-
           This Registry Object ReferenceFramework provides the information of a Procedure. It MUST NOT contain any relations to other Reference Frameworks (Procedures) as this are provided dynamically by the use of associations. The classification node used MUST be ReferenceFramework under the EB Classification Scheme urn:fdc:oots:classification:eb.
         properties:
-          Identifier:
+          id:
             type: string
             example: "118fd444-6443-42be-a084-c9fbfd1f674d"
-          Title:
+          procedureTypeId:
+            type: string
+            example: R1
+          nameLang:
             type: array
             items:
               type: object
               properties:
                 lang:
                   type: string
-                text:
+                name:
                   type: string
             example:
               - lang: "EN"
@@ -812,11 +778,7 @@ components:
                 text: "Procedure #1 'Requesting proof of registration of birth' belongs to the life event 'Birth' of Annex II of the Regulation (EU) 2018/1724 of the European Parliament and of the Council of 2 October 2018 establishing a single digital gateway to provide access to information, to procedures and to assistance and problem-solving services and amending Regulation (EU) No 1024/2012."
               - lang: "DE"
                 text: "Das Verfahren #1 'Beantragung des Nachweises über die Eintragung in das Geburtenregister' gehört zum Lebensereignis 'Geburt' des Anhangs II der Verordnung (EU) 2018/1724 des Europäischen Parlaments und des Rates vom 2. Oktober 2018 über die Einrichtung eines einheitlichen digitalen Zugangstors zu Informationen, Verfahren, Hilfsund Problemlösungsdiensten und zur Änderung der Verordnung (EU) Nr. 1024/2012."
-          RelatedTo:
-            type: string
-            description: The Identifier of the SDGR Procedure which this procedure relates to encoded according to Procedures-CodeList.gc. In this case R1 relates to "Requesting a birth certificate"
-            example: "R1"
-          Jurisdiction:
+          jurisdiction:
               $ref: '#/components/schemas/Jurisdiction'
           requirements:
             type: array
@@ -827,7 +789,6 @@ components:
                   - https://sr.oots.tech.ec.europa.eu/requirements/f8a6a284-34e9-42c7-9733-63b5c4f4aa42
                   - https://sr.oots.tech.ec.europa.eu/requirements/005a80c1-f2d5-3cdb-bc65-2a085600fbde
                   - https://sr.oots.tech.ec.europa.eu/requirements/336661a9-677d-3dd5-ac25-d8a86756b20d
-
           outputEvidenceType:
                 type: object
                 properties:
@@ -841,14 +802,11 @@ components:
     PreviewResponse:
       type: object
       properties:
-        Procedure:
-          $ref: '#/components/schemas/Procedure'
-        Requirement:
+        procedure:
+          $ref: '#/components/schemas/Procedure/properties/id'
+        requirement:
           $ref: '#/components/schemas/Requirement'
-        EvidenceResponse:
-          $ref: '#/components/schemas/EvidenceResponse'
-
-      
-              
-
-      
+        evidenceDocuments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceDocument'
